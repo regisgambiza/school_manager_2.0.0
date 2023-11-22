@@ -462,7 +462,7 @@ QPushButton:pressed {
            <item>
             <widget class="QStackedWidget" name="stackedWidget">
              <property name="currentIndex">
-              <number>2</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="dash_board_page"/>
              <widget class="QWidget" name="fees_page">
@@ -547,7 +547,7 @@ QPushButton:pressed {
                     <item>
                      <layout class="QHBoxLayout" name="horizontalLayout_8">
                       <item>
-                       <widget class="QPushButton" name="pushButton">
+                       <widget class="QPushButton" name="pay_now">
                         <property name="text">
                          <string>Pay Now</string>
                         </property>

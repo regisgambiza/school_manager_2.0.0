@@ -2,9 +2,9 @@
 import sys
 import sqlite3
 from datetime import datetime
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.uic.properties import QtWidgets
-
+from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from src.app.ui.school_manager import Ui_MainWindow
 
 # TODO: Connect signals and slots for Add Student dialog
@@ -81,42 +81,91 @@ def create_school_database():
             db_connection.close()
 
 
+def generate_receipt_html(payment_id, date_of_payment, student_id, amount_paid,
+                          student_name="Unknown Student"):
+    CURRENT_DATE = datetime.now().date()
+
+    receipt_html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    margin: 20px;
+                    border: 1px solid #000;
+                    padding: 10px;
+                }}
+                .invoice-header {{
+                    text-align: center;
+                }}
+                .invoice-details {{
+                    margin-top: 20px;
+                }}
+                .thank-you {{
+                    text-align: center;
+                    margin-top: 20px;
+                }}
+                .contact-info {{
+                    text-align: center;
+                    margin-top: 10px;
+                }}
+            </style>
+        </head>
+        <body>
+
+        <div class="invoice-header">
+            <h2>Green Haven Academy</h2>
+            <p>Invoice</p>
+        </div>
+
+        <div class="invoice-details">
+            <p><strong>Payment ID:</strong> {payment_id}</p>
+            <p><strong>Date:</strong> {date_of_payment}</p>
+            <p><strong>Student ID:</strong> {student_id}</p>
+            <p><strong>Student Name:</strong> {student_name}</p>
+            <p><strong>Amount Paid:</strong> {amount_paid}</p>
+        </div>
+
+        <div class="thank-you">
+            <p>Thank you for your payment!</p>
+        </div>
+
+        <div class="contact-info">
+            <p>For any inquiries, please contact us at:</p>
+            <p>Phone Number: 0617751307</p>
+            <p>Email Address: regisgambiza@gmail.com</p>
+        </div>
+
+        </body>
+        </html>
+    """
+
+    return receipt_html
+
+
 class SchoolManagerApp(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
-        self.setupUi(self)  # This sets up the UI from the generated file
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)  # This sets up the UI from the generated file
+        self.fetch_and_display_payments()
+        self.ui.stackedWidget.setCurrentIndex(1)
 
         # self.setWindowFlags(Qt.FramelessWindowHint)
 
-        # TODO: Connect signals and slots for main window UI elements
-        # Example:
-
-        # self.stackedWidget.widget(0).connect(self.save_payment_info) # TODO: Fix this connection
-
-    import sqlite3
-
-    # FEES MODULE********************************************************************
-
-    # def show_fees_module(self):
-    # TODO: Implement the function to switch to the fees module page
-    # using QStackedWidget.
-    # Example:
-    # self.stackedWidget.setCurrentWidget(self.fees_module_widget)
-
-    # def add_fee(self):
-    # TODO: Implement the logic to add a new fee record.
-    # Example:
-    #   - Retrieve data from UI components.
-    #   - Perform validation.
-    #   - Insert the new fee record into the database.
-    #   - Provide appropriate user feedback.
-    #   - Display transaction information on text-browser
+        # Connecting signals and slots
+        self.ui.pay_now.clicked.connect(self.save_payment_info)
+        self.ui.pushButton_2.clicked.connect(self.print_receipt_2)
 
     def save_payment_info(self):
+        print("PayNow Clicked")
         # Fetch payment information from the GUI
         global db_connection
-        student_id = self.line_edit1.text()
-        amount_paid = self.line_edit2.text()
+        student_id = self.ui.lineEdit.text()
+        amount_paid = self.ui.lineEdit_2.text()
+
+        print(f"{amount_paid}")
 
         try:
             # Connect to the SQLite database
@@ -137,12 +186,14 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             student_name = cursor.fetchone()
             student_name = f"{student_name[0]} {student_name[1]}" if student_name else "Unknown Student"
 
-            # Format the receipt
-            CURRENT_DATE = datetime.now().date()
-            receipt = f"Receipt\nDate: {CURRENT_DATE}\nStudent ID: {student_id}\nStudent Name: {student_name}\nAmount Paid: {amount_paid}"
-
             # Display the receipt in the QTextBrowser
-            self.text_browser.setPlainText(receipt)
+            self.ui.textBrowser.setHtml(generate_receipt_html(
+                payment_id=cursor.lastrowid,  # Retrieve the last inserted payment_id
+                date_of_payment=datetime.now().date(),
+                student_id=student_id,
+                amount_paid=amount_paid,
+                student_name=student_name
+            ))
 
         except sqlite3.Error as e:
             print(f"Error: {e}")
@@ -151,6 +202,92 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             # Close the connection
             if db_connection:
                 db_connection.close()
+
+    def print_receipt_2(self):
+        # Get the QTextDocument from the QTextBrowser
+        global db_connection
+        document = self.ui.textBrowser.document()
+
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Fetch the details of the most recent payment
+            cursor.execute('''
+                SELECT payment_id, date_of_payment, student_id, amount_paid
+                FROM financial_info
+                ORDER BY date_of_payment DESC
+                LIMIT 1
+            ''')
+            current_payment = cursor.fetchone()
+
+            if current_payment:
+                # Add payment details to the HTML
+                receipt_html = generate_receipt_html(
+                    payment_id=current_payment[0],
+                    date_of_payment=current_payment[1],
+                    student_id=current_payment[2],
+                    amount_paid=current_payment[3]
+                )
+
+                # Set the HTML content to the QTextBrowser
+                document.setHtml(receipt_html)
+
+                # Create a QPrinter
+                printer = QPrinter()
+
+                # Create a QPrintDialog
+                print_dialog = QPrintDialog(printer, self)
+
+                if print_dialog.exec_() == QPrintDialog.Accepted:
+                    # If the user accepts the print dialog, print the document
+                    document.print_(printer)
+
+            else:
+                print("No payment found to print.")
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
+
+
+    def fetch_and_display_payments(self):
+        global db_connection
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Fetch all payments made in ascending order based on date_of_payment
+            cursor.execute('''
+                   SELECT payment_id, date_of_payment, student_id, amount_paid
+                   FROM financial_info
+                   ORDER BY date_of_payment ASC
+               ''')
+            payments = cursor.fetchall()
+
+            # Format the payments as a list
+            payments_list = [
+                "Payment ID: {0}, Date: {1}, Student ID: {2}, Amount Paid: {3}".format(*payment)
+                for payment in reversed(payments)  # Reverse the order to have the last payment at the top
+            ]
+
+            # Display the payments list in the QTextBrowser
+            self.ui.textBrowser_2.setPlainText("\n".join(payments_list))
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
+
 
     # def print_receipt(self):
     # TODO: Implement the logic to print a receipt to a physical printer.
