@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1040</width>
-    <height>576</height>
+    <width>1156</width>
+    <height>772</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -461,6 +461,28 @@ QPushButton:pressed {
            </property>
            <item>
             <widget class="QStackedWidget" name="stackedWidget">
+             <property name="styleSheet">
+              <string notr="true">QPushButton {
+    border: 2px solid #8f8f91;
+    border-radius: 6px;
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #f6f7fa, stop: 1 #dadbde);
+    min-width: 80px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}</string>
+             </property>
              <property name="currentIndex">
               <number>1</number>
              </property>
@@ -512,7 +534,16 @@ QPushButton:pressed {
                        </widget>
                       </item>
                       <item>
-                       <widget class="QLineEdit" name="lineEdit_3"/>
+                       <widget class="QLineEdit" name="lineEdit_3">
+                        <property name="styleSheet">
+                         <string notr="true">QLineEdit:read-only {
+    background: lightblue;
+}</string>
+                        </property>
+                        <property name="readOnly">
+                         <bool>true</bool>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
                     </item>
@@ -545,7 +576,13 @@ QPushButton:pressed {
                      </layout>
                     </item>
                     <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_8">
+                     <layout class="QHBoxLayout" name="horizontalLayout_8"/>
+                    </item>
+                    <item>
+                     <widget class="QTextBrowser" name="textBrowser"/>
+                    </item>
+                    <item>
+                     <layout class="QHBoxLayout" name="horizontalLayout_7">
                       <item>
                        <widget class="QPushButton" name="pay_now">
                         <property name="text">
@@ -553,26 +590,6 @@ QPushButton:pressed {
                         </property>
                        </widget>
                       </item>
-                      <item>
-                       <spacer name="horizontalSpacer">
-                        <property name="orientation">
-                         <enum>Qt::Horizontal</enum>
-                        </property>
-                        <property name="sizeHint" stdset="0">
-                         <size>
-                          <width>40</width>
-                          <height>20</height>
-                         </size>
-                        </property>
-                       </spacer>
-                      </item>
-                     </layout>
-                    </item>
-                    <item>
-                     <widget class="QTextBrowser" name="textBrowser"/>
-                    </item>
-                    <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_7">
                       <item>
                        <widget class="QPushButton" name="pushButton_2">
                         <property name="text">
@@ -629,207 +646,84 @@ QPushButton:pressed {
                  </property>
                  <layout class="QVBoxLayout" name="verticalLayout_8">
                   <item>
-                   <layout class="QVBoxLayout" name="verticalLayout_7">
+                   <layout class="QVBoxLayout" name="verticalLayout_4">
                     <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_10">
+                     <layout class="QVBoxLayout" name="verticalLayout_7">
                       <item>
-                       <widget class="QLineEdit" name="lineEdit_4"/>
+                       <layout class="QHBoxLayout" name="horizontalLayout_10">
+                        <item>
+                         <spacer name="horizontalSpacer_4">
+                          <property name="orientation">
+                           <enum>Qt::Horizontal</enum>
+                          </property>
+                          <property name="sizeHint" stdset="0">
+                           <size>
+                            <width>40</width>
+                            <height>20</height>
+                           </size>
+                          </property>
+                         </spacer>
+                        </item>
+                        <item>
+                         <widget class="QLineEdit" name="lineEdit_4"/>
+                        </item>
+                        <item>
+                         <widget class="QPushButton" name="pushButton_3">
+                          <property name="text">
+                           <string>Search</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
                       </item>
                       <item>
-                       <widget class="QPushButton" name="pushButton_3">
-                        <property name="text">
-                         <string>Search</string>
+                       <widget class="QTextBrowser" name="textBrowser_3">
+                        <property name="maximumSize">
+                         <size>
+                          <width>16777215</width>
+                          <height>16777215</height>
+                         </size>
                         </property>
                        </widget>
                       </item>
                      </layout>
                     </item>
                     <item>
-                     <widget class="QTextBrowser" name="textBrowser_3">
-                      <property name="maximumSize">
-                       <size>
-                        <width>16777215</width>
-                        <height>16777215</height>
-                       </size>
-                      </property>
-                     </widget>
-                    </item>
-                   </layout>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="groupBox_3">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="title">
-                  <string>Students Biography</string>
-                 </property>
-                 <property name="flat">
-                  <bool>true</bool>
-                 </property>
-                 <layout class="QVBoxLayout" name="verticalLayout_4">
-                  <item>
-                   <layout class="QVBoxLayout" name="verticalLayout_13">
-                    <property name="spacing">
-                     <number>0</number>
-                    </property>
-                    <item>
-                     <layout class="QVBoxLayout" name="verticalLayout_14">
-                      <property name="spacing">
-                       <number>-1</number>
-                      </property>
+                     <layout class="QHBoxLayout" name="horizontalLayout_12">
                       <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_27">
-                        <item>
-                         <widget class="QLabel" name="label_34">
-                          <property name="text">
-                           <string>Learners Name:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_35">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
+                       <widget class="QPushButton" name="pushButton_5">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="text">
+                         <string>Add Student</string>
+                        </property>
+                       </widget>
                       </item>
                       <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_28">
-                        <item>
-                         <widget class="QLabel" name="label_36">
-                          <property name="text">
-                           <string>Class:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_37">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
+                       <spacer name="horizontalSpacer">
+                        <property name="orientation">
+                         <enum>Qt::Horizontal</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                         <size>
+                          <width>40</width>
+                          <height>20</height>
+                         </size>
+                        </property>
+                       </spacer>
                       </item>
                       <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_29">
-                        <item>
-                         <widget class="QLabel" name="label_38">
-                          <property name="text">
-                           <string>L.Phone #:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_39">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_30">
-                        <item>
-                         <widget class="QLabel" name="label_40">
-                          <property name="text">
-                           <string>Gyardian:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_41">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_31">
-                        <item>
-                         <widget class="QLabel" name="label_42">
-                          <property name="text">
-                           <string>G.Phone #:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_43">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_32">
-                        <item>
-                         <widget class="QLabel" name="label_44">
-                          <property name="text">
-                           <string>Guradians Email:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_45">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </item>
-                      <item>
-                       <layout class="QHBoxLayout" name="horizontalLayout_33">
-                        <item>
-                         <widget class="QLabel" name="label_46">
-                          <property name="text">
-                           <string>Physical Address:</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_47">
-                          <property name="text">
-                           <string>TextLabel</string>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
+                       <widget class="QPushButton" name="pushButton">
+                        <property name="text">
+                         <string>&lt;</string>
+                        </property>
+                       </widget>
                       </item>
                      </layout>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="pushButton_5">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="text">
-                       <string>Add Student</string>
-                      </property>
-                     </widget>
                     </item>
                    </layout>
                   </item>
@@ -860,7 +754,7 @@ QPushButton:pressed {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1040</width>
+     <width>1156</width>
      <height>24</height>
     </rect>
    </property>

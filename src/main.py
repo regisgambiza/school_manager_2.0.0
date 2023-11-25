@@ -2,10 +2,10 @@
 import sys
 import sqlite3
 from datetime import datetime
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QMessageBox
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from src.app.ui.school_manager import Ui_MainWindow
+from src.app.ui.Add_student_dialog import Ui_Dialog
 
 # TODO: Connect signals and slots for Add Student dialog
 # class AddStudentDialog(QDialog, Ui_AddStudentDialog):
@@ -25,6 +25,55 @@ from src.app.ui.school_manager import Ui_MainWindow
 
 
 db_connection = ''
+
+
+class AddStudentDialog(QDialog, Ui_Dialog):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.buttonBox.accepted.connect(self.add_student)
+        self.buttonBox.rejected.connect(self.reject)
+
+    def add_student(self):
+        # Retrieve user input from the dialog
+        first_name = self.lineEdit.text()
+        last_name = self.lineEdit_2.text()
+        class_name = self.lineEdit_3.text()
+        phone_number = self.lineEdit_4.text()
+        guardian_name = self.lineEdit_5.text()
+        guardian_phone_number = self.lineEdit_6.text()
+        guardian_email = self.lineEdit_7.text()
+        physical_address = self.lineEdit_8.text()
+
+        # Add the student to the database
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Insert the student information into the students table
+            cursor.execute('''
+                INSERT INTO students (first_name, last_name, class, phone_number,
+                                       guardian_name, guardian_phone_number, guardian_email, physical_address)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (first_name, last_name, class_name, phone_number,
+                  guardian_name, guardian_phone_number, guardian_email, physical_address))
+
+            # Commit the changes
+            db_connection.commit()
+
+            # Close the dialog
+            self.accept()
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+            # Display an error message to the user
+            QMessageBox.critical(self, "Error", "Failed to add the student to the database.")
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
 
 
 def create_school_database():
@@ -151,12 +200,172 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
         self.ui.setupUi(self)  # This sets up the UI from the generated file
         self.fetch_and_display_payments()
         self.ui.stackedWidget.setCurrentIndex(1)
+        self.ui.textBrowser_3.anchorClicked.connect(
+            self.show_student_info)  # Add a signal for the student list item clicked
 
         # self.setWindowFlags(Qt.FramelessWindowHint)
 
         # Connecting signals and slots
         self.ui.pay_now.clicked.connect(self.save_payment_info)
         self.ui.pushButton_2.clicked.connect(self.print_receipt_2)
+        self.ui.fees_push_button.clicked.connect(lambda: self.change_page(1))
+        self.ui.students_push_button.clicked.connect(lambda: self.change_page(2))
+        self.ui.students_push_button.clicked.connect(self.show_students_list)
+        self.ui.pushButton_5.clicked.connect(self.show_add_student_dialog)
+        self.ui.lineEdit.textChanged.connect(self.search_student_by_id)
+        self.ui.pushButton.clicked.connect(self.show_students_list)
+
+    def show_students_list(self):
+        global db_connection
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Fetch all students from the database, ordered by first name and last name
+            cursor.execute('SELECT student_id, first_name, last_name FROM students ORDER BY first_name, last_name')
+            students = cursor.fetchall()
+
+            # Format the students list as HTML for display in QTextBrowser
+            students_list_html = "<ul>"
+            for student in students:
+                student_id, first_name, last_name = student
+                students_list_html += f'<li><a href="{student_id}">{first_name} {last_name}</a></li>'
+            students_list_html += "</ul>"
+
+            # Display the students list in QTextBrowser
+            self.ui.textBrowser_3.setHtml(students_list_html)
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
+
+    def show_student_info(self, link):
+        # Extract student_id from the link and fetch detailed information
+        student_id = int(link.toString())
+        student_info = self.get_student_info(student_id)
+
+        # Display the detailed information in QTextBrowser
+        self.ui.textBrowser_3.setHtml(student_info)
+
+    def get_student_info(self, student_id):
+        global db_connection
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Fetch detailed information of the selected student
+            cursor.execute('''
+                SELECT * FROM students
+                WHERE student_id = ?
+            ''', (student_id,))
+
+            student_info = cursor.fetchone()
+
+            # Fetch student payments arranged by date with the latest payment at the top
+            cursor.execute('''
+                SELECT date_of_payment, amount_paid, payment_id
+                FROM financial_info
+                WHERE student_id = ?
+                ORDER BY date_of_payment DESC
+            ''', (student_id,))
+            payments = cursor.fetchall()
+
+            # Format the student information and payments for display
+            if student_info:
+                student_info_text = f"<h2>Student ID: {student_info[0]}</h2>"
+                student_info_text += f"<p>Name: {student_info[1]} {student_info[2]}</p>"
+                student_info_text += f"<p>Class: {student_info[3]}</p>"
+                student_info_text += f"<p>Phone Number: {student_info[4]}</p>"
+                student_info_text += f"<p>Guardian: {student_info[5]}</p>"
+                student_info_text += f"<p>Guardian Phone: {student_info[6]}</p>"
+                student_info_text += f"<p>Guardian Email: {student_info[7]}</p>"
+                student_info_text += f"<p>Physical Address: {student_info[8]}</p>"
+
+                if payments:
+                    student_info_text += "<h3>Payments:</h3>"
+                    total_amount_paid = 0
+
+                    for payment in payments:
+                        student_info_text += (
+                            f"<p>Payment ID: {payment[2]}, Date: {payment[0]}, Amount Paid: {payment[1]}</p>"
+                        )
+                        total_amount_paid += payment[1]
+
+                    student_info_text += f"<p><strong>Total Amount Paid: {total_amount_paid}</strong></p>"
+
+                return student_info_text
+            else:
+                return "Student not found."
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+            return "Error fetching student information."
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
+
+    def search_student_by_id(self):
+        # Get the entered student ID
+        student_id = self.ui.lineEdit.text()
+
+        # Perform a search in the database based on the entered student ID
+        student_info = self.fetch_student_info(student_id)
+
+        # Display the student's name in lineEdit_2
+        if student_info:
+            full_name = f"{student_info[1]} {student_info[2]}"  # Adjust indices based on your database schema
+            self.ui.lineEdit_3.setText(full_name)
+        else:
+            # Clear lineEdit_2 if no matching student is found
+            self.ui.lineEdit_3.clear()
+
+    def fetch_student_info(self, student_id):
+        # Implement the logic to fetch student information from the database
+        global db_connection
+        try:
+            # Connect to the SQLite database
+            db_connection = sqlite3.connect('school_database.db')
+            cursor = db_connection.cursor()
+
+            # Fetch detailed information of the selected student
+            cursor.execute('''
+                SELECT * FROM students
+                WHERE student_id = ?
+            ''', (student_id,))
+
+            student_info = cursor.fetchone()
+
+            return student_info
+
+        except sqlite3.Error as e:
+            print(f"Error: {e}")
+            return None
+
+        finally:
+            # Close the connection
+            if db_connection:
+                db_connection.close()
+
+    def show_add_student_dialog(self):
+        # Create an instance of the AddStudentDialog
+        add_student_dialog = AddStudentDialog()
+
+        # Show the dialog
+        if add_student_dialog.exec_() == QDialog.Accepted:
+            # TODO: Refresh the student list or perform any other necessary actions
+            print("Student added successfully")
+
+    def change_page(self, index):
+        # Change the current page of the stacked widget
+        self.ui.stackedWidget.setCurrentIndex(index)
 
     def save_payment_info(self):
         print("PayNow Clicked")
@@ -200,6 +409,7 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
 
         finally:
             # Close the connection
+            self.fetch_and_display_payments()
             if db_connection:
                 db_connection.close()
 
@@ -255,7 +465,6 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             if db_connection:
                 db_connection.close()
 
-
     def fetch_and_display_payments(self):
         global db_connection
         try:
@@ -263,22 +472,58 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             db_connection = sqlite3.connect('school_database.db')
             cursor = db_connection.cursor()
 
-            # Fetch all payments made in ascending order based on date_of_payment
+            # Fetch all payments made in descending order based on date_of_payment
             cursor.execute('''
-                   SELECT payment_id, date_of_payment, student_id, amount_paid
-                   FROM financial_info
-                   ORDER BY date_of_payment ASC
-               ''')
+                SELECT payment_id, date_of_payment, student_id, amount_paid
+                FROM financial_info
+                ORDER BY date_of_payment DESC
+            ''')
             payments = cursor.fetchall()
 
-            # Format the payments as a list
-            payments_list = [
-                "Payment ID: {0}, Date: {1}, Student ID: {2}, Amount Paid: {3}".format(*payment)
-                for payment in reversed(payments)  # Reverse the order to have the last payment at the top
-            ]
+            # Generate HTML table for payments
+            table_html = """
+                <html>
+                <head>
+                    <style>
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                        }
+                        th, td {
+                            border: 1px solid #dddddd;
+                            text-align: left;
+                            padding: 8px;
+                        }
+                    </style>
+                </head>
+                <body>
+                <table>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Date</th>
+                        <th>Student ID</th>
+                        <th>Amount Paid</th>
+                    </tr>
+            """
 
-            # Display the payments list in the QTextBrowser
-            self.ui.textBrowser_2.setPlainText("\n".join(payments_list))
+            for payment in payments:
+                table_html += f"""
+                    <tr>
+                        <td>{payment[0]}</td>
+                        <td>{payment[1]}</td>
+                        <td>{payment[2]}</td>
+                        <td>{payment[3]}</td>
+                    </tr>
+                """
+
+            table_html += """
+                </table>
+                </body>
+                </html>
+            """
+
+            # Display the HTML table in the QTextBrowser
+            self.ui.textBrowser_2.setHtml(table_html)
 
         except sqlite3.Error as e:
             print(f"Error: {e}")
@@ -288,26 +533,7 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             if db_connection:
                 db_connection.close()
 
-
-    # def print_receipt(self):
-    # TODO: Implement the logic to print a receipt to a physical printer.
-    # Example:
-    #   - Retrieve information from the text-browser.
-    #   - Use a printing library or framework (e.g., QtPrintSupport) to send
-    #     the receipt data to the physical printer.
-    #   - Handle any necessary formatting for the printed receipt.
-    #   - Provide appropriate user feedback.
-    #   (Remember to replace the print statement with actual logic.)
-    # Get information from text-browser
-    # Print out a physical copy through printer
-
     # STUDENT MODULE****************************************************************
-
-    # def show_students_page(self):
-    # TODO: Implement the function to switch to the fees module page
-    # using QStackedWidget.
-    # Example:
-    # self.stackedWidget.setCurrentWidget(students_page)
 
     # def view_student_list(self):
     # TODO: Implement the logic to display a list of students.
@@ -321,24 +547,8 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
 
 def main():
     app = QApplication(sys.argv)
-
-    # TODO: SQLite database connection
-    # 1. Connect to the SQLite database
-    #    - Use the sqlite3 module to establish a connection.
-    # 2. Handle potential exceptions
-    #    - Implement error handling for connection issues.
-    # 3. Consider connection parameters
-    #    - Review and adjust connection parameters as needed.
-    # Example:
-    # db_connection = sqlite3.connect('school_database.db')
-
     create_school_database()
-
-    # TODO: Initialize and run the main application
-    # 3. Create an instance of the SchoolManagerApp and pass the database connection
-    # school_manager_app = SchoolManagerApp(db_connection)
-    school_manager_app = SchoolManagerApp()  # replace this one with one above when database has been implemented
-
+    school_manager_app = SchoolManagerApp()
     school_manager_app.show()
     sys.exit(app.exec_())
 
