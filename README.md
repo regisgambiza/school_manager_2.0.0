@@ -20,7 +20,10 @@ School Manager App is a simple desktop application for managing student informat
 
 ## Screenshots
 
-Include screenshots of your application to give users a visual preview.
+![Screenshot 2023-11-26 at 09 54 31](https://github.com/regisgambiza/school_manager_2.0.0/assets/36857562/cc78f9f7-3843-45ea-80dd-80f189a18b45)
+
+![Screenshot 2023-11-26 at 09 56 34](https://github.com/regisgambiza/school_manager_2.0.0/assets/36857562/a3e17f5a-79ff-496c-8029-0f9441416d92)
+
 
 ## Getting Started
 
