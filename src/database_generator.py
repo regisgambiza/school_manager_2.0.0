@@ -2,6 +2,7 @@ import sqlite3
 from faker import Faker
 from tqdm import tqdm
 
+
 class DatabaseGenerator:
     def __init__(self):
         # Create an instance of the Faker class for generating fake data
@@ -101,6 +102,7 @@ class DatabaseGenerator:
 
         # Close the progress bar
         progress_bar.close()
+
 
 if __name__ == "__main__":
     # Take user input for the number of students and transactions per student

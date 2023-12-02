@@ -2,27 +2,16 @@
 import sys
 import sqlite3
 from datetime import datetime
+
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QProgressBar, QProgressDialog, QApplication, QWidget, QVBoxLayout, QTableWidgetItem, \
+    QHeaderView
+from PyQt5.QtCore import Qt, QTimer, QCoreApplication
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QMessageBox
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter
 from src.app.ui.school_manager import Ui_MainWindow
 from src.app.ui.Add_student_dialog import Ui_Dialog
-
-# TODO: Connect signals and slots for Add Student dialog
-# class AddStudentDialog(QDialog, Ui_AddStudentDialog):
-# def __init__(self):
-# super().__init__()
-# self.setupUi(self)
-
-# TODO: Connect signals and slots for Add Student dialog
-# Example:
-# self.addButton.clicked.connect(self.add_student)
-
-# TODO: Implement functions for handling Add Student dialog events
-# Example:
-# def add_student(self):
-#     # TODO: Implement logic to add a new student
-#     print("Adding a new student")
-
+from qt_material import apply_stylesheet
 
 db_connection = ''
 
@@ -31,11 +20,18 @@ class AddStudentDialog(QDialog, Ui_Dialog):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        try:
+            with open("style.qss") as f:
+                style = f.read()  # 读取样式表
+                self.setStyleSheet(style)
+        except:
+            print("open stylesheet error")
         self.buttonBox.accepted.connect(self.add_student)
         self.buttonBox.rejected.connect(self.reject)
 
     def add_student(self):
         # Retrieve user input from the dialog
+        global db_connection
         first_name = self.lineEdit.text()
         last_name = self.lineEdit_2.text()
         class_name = self.lineEdit_3.text()
@@ -198,12 +194,21 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)  # This sets up the UI from the generated file
+
+        try:
+            with open("style.qss") as f:
+                style = f.read()  # 读取样式表
+                self.setStyleSheet(style)
+        except:
+            print("open stylesheet error")
+
         self.fetch_and_display_payments()
         self.ui.stackedWidget.setCurrentIndex(1)
         self.ui.textBrowser_3.anchorClicked.connect(
             self.show_student_info)  # Add a signal for the student list item clicked
 
         # self.setWindowFlags(Qt.FramelessWindowHint)
+
 
         # Connecting signals and slots
         self.ui.pay_now.clicked.connect(self.save_payment_info)
@@ -222,16 +227,31 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             db_connection = sqlite3.connect('school_database.db')
             cursor = db_connection.cursor()
 
-            # Fetch all students from the database, ordered by first name and last name
-            cursor.execute('SELECT student_id, first_name, last_name FROM students ORDER BY first_name, last_name')
+            # Fetch all students from the database, ordered by class, first name, and last name
+            cursor.execute(
+                'SELECT student_id, first_name, last_name, class FROM students ORDER BY class, first_name, last_name')
             students = cursor.fetchall()
 
-            # Format the students list as HTML for display in QTextBrowser
-            students_list_html = "<ul>"
+            # Organize students by class
+            class_students = {}
             for student in students:
-                student_id, first_name, last_name = student
-                students_list_html += f'<li><a href="{student_id}">{first_name} {last_name}</a></li>'
-            students_list_html += "</ul>"
+                student_id, first_name, last_name, class_name = student
+                if class_name not in class_students:
+                    class_students[class_name] = []
+                class_students[class_name].append((student_id, first_name, last_name))
+
+            # Format the students list as HTML for display in QTextBrowser
+            students_list_html = "<div style='display: flex;'>"
+            for class_name, class_students_list in class_students.items():
+                students_list_html += f"<div style='margin-right: 20px;'>"
+                students_list_html += f"<h2>{class_name}</h2>"
+                students_list_html += "<ul>"
+                for student in class_students_list:
+                    student_id, first_name, last_name = student
+                    students_list_html += f'<li><a href="{student_id}">{first_name} {last_name}</a></li>'
+                students_list_html += "</ul>"
+                students_list_html += "</div>"
+            students_list_html += "</div>"
 
             # Display the students list in QTextBrowser
             self.ui.textBrowser_3.setHtml(students_list_html)
@@ -413,6 +433,7 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             if db_connection:
                 db_connection.close()
 
+
     def print_receipt_2(self):
         # Get the QTextDocument from the QTextBrowser
         global db_connection
@@ -480,50 +501,25 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
             ''')
             payments = cursor.fetchall()
 
-            # Generate HTML table for payments
-            table_html = """
-                <html>
-                <head>
-                    <style>
-                        table {
-                            border-collapse: collapse;
-                            width: 100%;
-                        }
-                        th, td {
-                            border: 1px solid #dddddd;
-                            text-align: left;
-                            padding: 8px;
-                        }
-                    </style>
-                </head>
-                <body>
-                <table>
-                    <tr>
-                        <th>Payment ID</th>
-                        <th>Date</th>
-                        <th>Student ID</th>
-                        <th>Amount Paid</th>
-                    </tr>
-            """
+            # Create a QStandardItemModel
+            model = QStandardItemModel(len(payments), 4)
+            model.setHorizontalHeaderLabels(["Payment ID", "Date", "Student ID", "Amount Paid"])
 
-            for payment in payments:
-                table_html += f"""
-                    <tr>
-                        <td>{payment[0]}</td>
-                        <td>{payment[1]}</td>
-                        <td>{payment[2]}</td>
-                        <td>{payment[3]}</td>
-                    </tr>
-                """
+            # Populate the model with payment data
+            for row, payment in enumerate(payments):
+                for col, value in enumerate(payment):
+                    item = QStandardItem(str(value))
+                    model.setItem(row, col, item)
 
-            table_html += """
-                </table>
-                </body>
-                </html>
-            """
+            # Set the model on the QTableView
+            self.ui.tableView.setModel(model)
 
-            # Display the HTML table in the QTextBrowser
-            self.ui.textBrowser_2.setHtml(table_html)
+            # Auto-resize columns to content
+            self.ui.tableView.resizeColumnsToContents()
+
+            # Set column headers to stretch to fill the available space
+            header = self.ui.tableView.horizontalHeader()
+            header.setSectionResizeMode(QHeaderView.Stretch)
 
         except sqlite3.Error as e:
             print(f"Error: {e}")
@@ -547,6 +543,10 @@ class SchoolManagerApp(QMainWindow, Ui_MainWindow):
 
 def main():
     app = QApplication(sys.argv)
+
+    # setup stylesheet
+    # apply_stylesheet(app, theme='dark_lightgreen.xml')
+
     create_school_database()
     school_manager_app = SchoolManagerApp()
     school_manager_app.show()
